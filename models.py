@@ -1,6 +1,8 @@
+import bcrypt
+import datetime
 from db_connection import db
 from sqlalchemy.ext.hybrid import hybrid_property
-import bcrypt
+
 
 
 class UserModel(db.Model):
@@ -35,3 +37,23 @@ class UserModel(db.Model):
 
     def authenticate(self, _password):
         return bcrypt.checkpw(_password.encode('utf-8'), self.password.encode('utf-8'))
+
+
+class AuthTokensModel(db.Model):
+    __tablename__ = 'auth_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    access_token = db.Column(db.String(500), nullable=True)
+    refresh_token = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return 'Auth tokens'
+    
+    def to_dict(self):
+        """Convert SQLAlchemy object to a dictionary"""
+        return {
+            "access_token": self.access_token,
+            "refresh_token": self.refresh_token,
+            "created_at": self.created_at
+        }

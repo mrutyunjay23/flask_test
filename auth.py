@@ -6,10 +6,11 @@ from pydantic import BaseModel, Field
 from flask_openapi3 import Tag
 
 
-from models import UserModel
+from models import UserModel, AuthTokensModel
 from db_connection import db
 
 from config import API_SECRET_KEY
+from auth_helper import get_authentication_tokens
 
 security = [{"jwt": []}]
 
@@ -59,14 +60,16 @@ def login(body: LoginBody):
 
     user = UserModel.query.filter_by(email=body.email).first()
     if user and user.authenticate(body.password):
-        token = jwt.encode({
-            'id': user.id,
-            'exp' : datetime.now() + timedelta(minutes = 30)
-            }, API_SECRET_KEY)
+        authentication_tokens = get_authentication_tokens(user)
+
+        auth_token = AuthTokensModel(id=user.id, access_token=authentication_tokens.get('access_token'),
+                                     refresh_token=authentication_tokens.get('refresh_token'))
+        db.session.add(auth_token)
+        db.session.commit()
         return {
-        "code": 200,
-        "token": token
-        }
+            "code": 200,
+            "data":authentication_tokens
+            }
     else:
         return {
             "code": 200,
